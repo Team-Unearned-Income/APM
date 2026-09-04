@@ -1,0 +1,9 @@
+global:
+  scrape_interval: 5s
+
+scrape_configs:
+  - job_name: 'KnockIn'
+    scheme: https  # HTTPS 전송 명시
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['api.knock-in.com:443']

@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+  prometheus:
+    image: prom/prometheus
+    container_name: prometheus-knock-in
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    restart: always
+
+  grafana:
+    image: grafana/grafana
+    container_name: grafana-knock-in
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./ssl:/etc/grafana/ssl:ro  # ssl 폴더 읽기 전용 마운트
+    environment:
+      - GF_SERVER_PROTOCOL=https
+      - GF_SERVER_CERT_FILE=/etc/grafana/ssl/cert.pem  # 실제 ssl 폴더 내 cert 파일명으로 수정
+      - GF_SERVER_CERT_KEY=/etc/grafana/ssl/key.pem    # 실제 ssl 폴더 내 key 파일명으로 수정
+    restart: always
