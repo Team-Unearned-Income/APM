@@ -1,31 +1,31 @@
-# APM (Application Performance Monitoring)
+# APM & Load Testing Environment
 
-Prometheus와 Grafana를 활용한 Application Performance Monitoring(APM) 구축 환경입니다.  
-Spring Boot Actuator 메트릭을 수집하여 Grafana 대시보드를 통해 시각화합니다.
-
----
-
-## 🛠️ 기술 스택 및 구조
-
-- **Prometheus**: 메트릭 수집 및 저장 (`9090` 포트)
-- **Grafana**: 모니터링 대시보드 시각화 (`3000` 포트, HTTPS 설정)
-- **대상 애플리케이션**: `KnockIn` (`https://api.knock-in.com/actuator/prometheus`)
+로컬 개발 환경에서 **Prometheus**, **Grafana**, 그리고 **nGrinder**를 활용하여 Application Performance Monitoring(APM) 및 부하 테스트(Load Testing)를 수행할 수 있도록 재구성한 환경입니다.
 
 ---
 
-## 📋 사전 준비 사항 (Prerequisites)
+## 🛠️ 기술 스택 및 서비스 구성
 
-Grafana에서 HTTPS 접속을 위해 SSL 인증서 파일이 필요합니다.  
-프로젝트 루트 경로에 `ssl` 디렉토리를 생성하고 인증서 파일을 위치시켜 주세요.
-
-- `ssl/cert.pem`
-- `ssl/key.pem`
+| 서비스 | 이미지 / 버전 | 포트 (Host) | 역할 |
+|---|---|---|---|
+| **Prometheus** | `prom/prometheus` | `9090` | 메트릭 수집 및 저장 (로컬 애플리케이션 메트릭 수집) |
+| **Grafana** | `grafana/grafana` | `3000` | 모니터링 시각화 대시보드 (`http://localhost:3000`) |
+| **nGrinder Controller** | `ngrinder/controller:3.5.9-p1` | `80`, `16001`, `12000-12029` | 부하 테스트 제어 Web UI (`http://localhost:80`) 및 에이전트 관리 |
+| **nGrinder Agent** | `ngrinder/agent:3.5.9-p1` | - | Controller의 명령을 받아 실제 부하를 생성 |
 
 ---
 
-## 🚀 Docker Compose 실행 방법
+## 🎯 모니터링 수집 대상 (Local App)
 
-### 1. 컨테이너 실행 (백그라운드)
+- **대상 애플리케이션 주소**: `http://host.docker.internal:8080`
+- **Metrics Path**: `/actuator/prometheus`
+- **설명**: Prometheus 컨테이너가 Docker 호스트의 `8080` 포트에서 실행 중인 로컬 Spring Boot 애플리케이션 메트릭을 수집합니다 (`extra_hosts` 설정 적용).
+
+---
+
+## 🚀 Docker Compose 실행 및 관리 방법
+
+### 1. 전체 컨테이너 실행 (백그라운드)
 ```bash
 docker compose up -d
 ```
@@ -36,34 +36,46 @@ docker compose up -d
 docker compose ps
 ```
 
-### 3. 컨테이너 로그 확인
+### 3. 실시간 로그 확인
 ```bash
+# 전체 로그 확인
 docker compose logs -f
+
+# 특정 서비스 로그 확인 (예: prometheus 또는 ngrinder-controller)
+docker compose logs -f prometheus
+docker compose logs -f ngrinder-controller
 ```
 
-### 4. 컨테이너 중지 및 제거
+### 4. 전체 컨테이너 중지 및 종료
 ```bash
 docker compose down
 ```
 
 ---
 
-## 🌐 서비스 접속 안내
-
-- **Prometheus**: [http://localhost:9090](http://localhost:9090)
-- **Grafana**: [https://localhost:3000](https://localhost:3000)
-
----
-
 ## 📊 Grafana 설정 및 대시보드 Import
 
-1. **Grafana 접속**: `https://localhost:3000` 접속 후 로그인 (기본 계정: `admin` / `admin`)
-2. **Prometheus 데이터 소스 (Data Source) 추가**:
+1. **Grafana 접속**: [http://localhost:3000](http://localhost:3000) (기본 계정: `admin` / `admin`)
+2. **Prometheus 데이터 소스(Data Source) 추가**:
    - `Connections` -> `Data sources` -> `Add data source`
    - **Prometheus** 선택
-   - URL 입력: `http://prometheus:9090` (또는 `http://prometheus-knock-in:9090`)
-   - `Save & test` 클릭하여 연결 확인
+   - **URL**: `http://prometheus:9090` (또는 `http://prometheus-knock-in:9090`)
+   - `Save & test` 버튼 클릭하여 연결 정상 여부 확인
 3. **대시보드 Import**:
    - `Dashboards` -> `New` -> `Import` 메뉴 이동
    - **Dashboard ID**: `11378` (Spring Boot Statistics 대시보드) 입력 후 `Load` 클릭
-   - Data Source로 방금 생성한 Prometheus 선택 후 `Import` 완료
+   - Data Source로 방금 생성한 Prometheus를 선택하고 `Import` 완료
+
+---
+
+## 🧪 nGrinder 부하 테스트 툴 사용 방법
+
+1. **nGrinder Controller Web UI 접속**: [http://localhost](http://localhost) (또는 `http://localhost:80`)
+2. **초기 로그인**:
+   - **ID**: `admin`
+   - **Password**: `admin`
+3. **Agent 연결 확인**:
+   - 상단 메뉴에서 `Agent Management` 클릭 후 `ngrinder-agent`가 정상 연동되어 있는지 확인
+4. **부하 테스트 스크립트 작성 및 실행**:
+   - `Script` 메뉴에서 Groovy 기반 테스트 스크립트 작성 (대상 주소: `http://host.docker.internal:8080` 또는 로컬 IP)
+   - `Performance Test` 메뉴에서 테스트 생성 및 VUser 설정 후 부하 테스트 수행

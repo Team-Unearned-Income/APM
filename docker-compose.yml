@@ -6,6 +6,8 @@ services:
     container_name: prometheus-knock-in
     ports:
       - "9090:9090"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"  # <--- 이 부분 추가
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml
     restart: always
@@ -15,10 +17,25 @@ services:
     container_name: grafana-knock-in
     ports:
       - "3000:3000"
-    volumes:
-      - ./ssl:/etc/grafana/ssl:ro  # ssl 폴더 읽기 전용 마운트
-    environment:
-      - GF_SERVER_PROTOCOL=https
-      - GF_SERVER_CERT_FILE=/etc/grafana/ssl/cert.pem  # 실제 ssl 폴더 내 cert 파일명으로 수정
-      - GF_SERVER_CERT_KEY=/etc/grafana/ssl/key.pem    # 실제 ssl 폴더 내 key 파일명으로 수정
     restart: always
+
+  ngrinder-controller:
+    image: ngrinder/controller:3.5.9-p1
+    container_name: ngrinder-controller
+    ports:
+      - "80:80"        # nGrinder Web UI
+      - "16001:16001"  # Agent 통신용 포트
+      - "12000-12029:12000-12029" # 부하 테스트 제어용 포트 range
+    volumes:
+      - ./ngrinder-controller-data:/opt/ngrinder-controller
+    restart: always
+
+  ngrinder-agent:
+    image: ngrinder/agent:3.5.9-p1
+    container_name: ngrinder-agent
+    links:
+      - ngrinder-controller
+    restart: always
+    command: ["ngrinder-controller:80"] # Controller 연결 주소 명시
+    depends_on:
+      - ngrinder-controller
