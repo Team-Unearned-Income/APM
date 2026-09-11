@@ -66,6 +66,68 @@ docker compose down
    - **Dashboard ID**: `11378` (Spring Boot Statistics 대시보드) 입력 후 `Load` 클릭
    - Data Source로 방금 생성한 Prometheus를 선택하고 `Import` 완료
 
+## 📊 Grafana Monitoring Dashboard Guide
+
+Prometheus 데이터 소스를 활용하여 애플리케이션(KnockIn)의 TPS 및 응답 시간을 모니터링하기 위한 패널 추가 가이드입니다.
+
+### 🛠️ 기본 설정 방법
+1. 그라파나 대시보드 진입
+2. 우측 상단 **Edit** 클릭
+3. **Add visualization** 또는 **Add panel** 선택
+4. **Data source**: `Prometheus` 선택
+
+---
+
+### 1. 전체 TPS / RPS
+* **설명**: 전체 애플리케이션의 초당 요청 수(TPS)를 모니터링합니다.
+* **PromQL**:
+  ```promql
+  sum(rate(http_server_requests_seconds_count{application="KnockIn"}[1m]))
+  ```
+
+---
+
+### 2. API별 TPS
+* **설명**: 액츄에이터(`/actuator.*`) 경로를 제외한 각 API 엔드포인트별 TPS를 추적합니다.
+* **PromQL**:
+  ```promql
+  sum by (method, uri) (
+    rate(http_server_requests_seconds_count{application="KnockIn", uri!~"/actuator.*"}[1m])
+  )
+  ```
+* **Panel 설정 팁**: 
+  * **Legend**: `{{method}} {{uri}}`
+  * **Graph style**: Time series
+
+---
+
+### 3. API별 TPS Top 10
+* **설명**: 호출량이 가장 많은 상위 10개의 API를 확인합니다.
+* **PromQL**:
+  ```promql
+  topk(10,
+    sum by (method, uri) (
+      rate(http_server_requests_seconds_count{uri!~"/actuator.*"}[1m])
+    )
+  )
+  ```
+
+---
+
+### 4. API별 평균 응답 시간 (ms)
+* **설명**: 각 API별 평균 응답 시간을 밀리초(ms) 단위로 측정합니다. (`sum / count * 1000`)
+* **PromQL**:
+  ```promql
+  (
+    sum by (method, uri) (
+      rate(http_server_requests_seconds_sum{application="KnockIn", uri!~"/actuator.*"}[1m])
+    )
+    /
+    sum by (method, uri) (
+      rate(http_server_requests_seconds_count{application="KnockIn", uri!~"/actuator.*"}[1m])
+    )
+  ) * 1000
+  ```
 ---
 
 ## 🧪 nGrinder 부하 테스트 툴 사용 방법
