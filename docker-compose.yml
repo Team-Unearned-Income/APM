@@ -30,9 +30,10 @@ services:
       - ./ngrinder-controller-data:/opt/ngrinder-controller
     restart: always
 
-  ngrinder-agent:
+  ngrinder-agent: 
     image: ngrinder/agent:3.5.9-p1
-    container_name: ngrinder-agent
+    # container_name: ngrinder-agent # AGENT 스케일 조절을 위한 삭제
+    scale: 5
     links:
       - ngrinder-controller
     restart: always
