@@ -22,6 +22,7 @@ services:
   ngrinder-controller:
     image: ngrinder/controller:3.5.9-p1
     container_name: ngrinder-controller
+    # platform: linux/amd64
     ports:
       - "80:80"        # nGrinder Web UI
       - "16001:16001"  # Agent 통신용 포트
@@ -33,6 +34,10 @@ services:
   ngrinder-agent:
     image: ngrinder/agent:3.5.9-p1
     container_name: ngrinder-agent
+    environment:
+      NGRINDER_BASE_URL: "http://host.docker.internal:8080"
+      NGRINDER_JWT_TOKEN: ""
+    # platform: linux/amd64
     links:
       - ngrinder-controller
     restart: always
