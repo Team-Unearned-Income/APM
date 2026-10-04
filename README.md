@@ -51,6 +51,20 @@ docker compose logs -f ngrinder-controller
 docker compose down
 ```
 
+### 5. nGrinder AGENT 설정
+
+아래와 같이 AGENT의 숫자를 설정할 수 있습니다. (default 5)
+
+```bash
+docker compose up -d --scale ngrinder-agent=8
+```
+
+nGrinder AGENT만 변경시에는 다음 명령어 실행
+
+```bash
+docker compose up -d --no-deps --scale ngrinder-agent=5 ngrinder-agent
+```
+
 ---
 
 ## 📊 Grafana 설정 및 대시보드 Import
