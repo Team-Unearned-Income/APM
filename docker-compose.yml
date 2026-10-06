@@ -34,6 +34,7 @@ services:
     command: -config.file=/etc/loki/loki-config.yaml
     volumes:
       - ./loki-config.yaml:/etc/loki/loki-config.yaml:ro
+      - ./ssl:/etc/loki/ssl:ro
       - loki-data:/loki
     restart: always
 

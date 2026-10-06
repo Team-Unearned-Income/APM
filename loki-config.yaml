@@ -3,6 +3,10 @@ auth_enabled: false
 server:
   http_listen_port: 3100
 
+  http_tls_config:
+    cert_file: /etc/loki/ssl/cert.pem
+    key_file: /etc/loki/ssl/key.pem
+    
 common:
   path_prefix: /loki
   storage:
