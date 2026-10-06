@@ -7,7 +7,7 @@ services:
     ports:
       - "9090:9090"
     volumes:
-      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
     restart: always
 
   grafana:
@@ -16,9 +16,26 @@ services:
     ports:
       - "3000:3000"
     volumes:
-      - ./ssl:/etc/grafana/ssl:ro  # ssl 폴더 읽기 전용 마운트
+      - ./ssl:/etc/grafana/ssl:ro
     environment:
       - GF_SERVER_PROTOCOL=https
-      - GF_SERVER_CERT_FILE=/etc/grafana/ssl/cert.pem  # 실제 ssl 폴더 내 cert 파일명으로 수정
-      - GF_SERVER_CERT_KEY=/etc/grafana/ssl/key.pem    # 실제 ssl 폴더 내 key 파일명으로 수정
+      - GF_SERVER_CERT_FILE=/etc/grafana/ssl/cert.pem
+      - GF_SERVER_CERT_KEY=/etc/grafana/ssl/key.pem
+    depends_on:
+      - prometheus
+      - loki
     restart: always
+
+  loki:
+    image: grafana/loki:3.7.0
+    container_name: loki-knock-in
+    ports:
+      - "3100:3100"
+    command: -config.file=/etc/loki/loki-config.yaml
+    volumes:
+      - ./loki-config.yaml:/etc/loki/loki-config.yaml:ro
+      - loki-data:/loki
+    restart: always
+
+volumes:
+  loki-data:
